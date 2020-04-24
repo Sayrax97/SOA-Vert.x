@@ -3,7 +3,9 @@ package com._4infinity.CycloMeter;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -15,17 +17,7 @@ public class MainVerticle {
 
   public static void main(String[] args) {
     Vertx vertx= Vertx.vertx();
-    JsonObject objekat1= new JsonObject();
-    objekat1.put("id",1);
-    objekat1.put("Name","Dusan");
-    objekat1.put("Surname","Jankovic");
-    JsonObject objekat2= new JsonObject();
-    objekat2.put("id",2);
-    objekat2.put("Name","Lazar");
-    objekat2.put("Surname","Pavlovic");
-    JsonArray objekti=new JsonArray();
-    objekti.add(objekat1);
-    objekti.add(objekat2);
+    EventBus eb=vertx.eventBus();
 
     HttpServer server= vertx.createHttpServer();
 
@@ -35,18 +27,13 @@ public class MainVerticle {
       routingContext.response()
         .putHeader("content-type","application/json")
         .setChunked(true)
-        .write(objekti.encodePrettily()).end();
+        .write("yay").end();
     });
     router.get("/example/:id").handler(routingContext -> {
       int id=Integer.parseInt(routingContext.request().getParam("id"));
       JsonObject result=new JsonObject();
       result.put("Message","Error 404: Not Found");
-      for (int i=0; i < objekti.size(); i++) {
-        JsonObject temp=objekti.getJsonObject(i);
-        if(temp.getInteger("id")==id){
-          result=temp;
-        }
-      }
+        routingContext.fail(418,new Throwable());
       routingContext.response()
         .putHeader("content-type","application/json")
         .setChunked(true)
