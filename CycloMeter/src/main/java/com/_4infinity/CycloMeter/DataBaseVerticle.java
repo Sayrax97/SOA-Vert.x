@@ -7,10 +7,7 @@ import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
-import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.Query;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
+import io.vertx.sqlclient.*;
 
 import javax.swing.*;
 
@@ -70,6 +67,25 @@ public class DataBaseVerticle extends AbstractVerticle {
         }
       });
     //endregion
+
+    MessageConsumer<JsonObject> consumer1=eventBus.consumer("data.base.postUser");
+    consumer1.handler(message -> {
+      System.out.println("uso sam u handler consmer");
+      client.preparedQuery("INSERT INTO users (username, gender,weight,age) VALUES(?,?,?,?)").
+        execute(Tuple.of(message.body().getString("username"),
+          (message.body().getString("gender")),
+          (message.body().getInteger("weight")),
+          (message.body().getInteger("age"))),event -> {
+            if(event.succeeded()){
+              message.reply("Uspesno odradjeno");
+              System.out.println("stiglo u uspesno");
+            }
+            else{
+              message.reply("Neuspesno odradjeno");
+              System.out.println("stiglo u neuspesno");
+            }
+          });
+    });
   }
   @Override
   public void stop() throws Exception {

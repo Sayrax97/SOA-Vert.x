@@ -40,6 +40,7 @@ public class ServiceVerticle extends AbstractVerticle {
       if(!user.getString("gender").contains("M") && !user.getString("gender").contains("F")){
         req.response().setStatusCode(400).end("Gender must be M or F");
       }
+      System.out.println("nesto");
       eventBus.request("data.base.postUser",user,ar->{
         req.response().setChunked(true).write(ar.result().body().toString()).end();
       });
