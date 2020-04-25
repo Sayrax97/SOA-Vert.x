@@ -8,48 +8,69 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.Query;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
+
+import javax.swing.*;
 
 public class DataBaseVerticle extends AbstractVerticle {
   private MySQLPool client;
   @Override
   public void start() {
-    EventBus eventBus=vertx.eventBus();
-    MessageConsumer<JsonObject> consumer=eventBus.consumer("data.base.mysql");
+    //region Init
+    EventBus eventBus = vertx.eventBus();
     MySQLConnectOptions connectOptions = new MySQLConnectOptions()
-      .setPort(3306)
+      .setPort(3308)
       .setHost("localhost")
       .setDatabase("cyclometer")
       .setUser("root")
       .setPassword("");
-      PoolOptions poolOptions = new PoolOptions()
-        .setMaxSize(5);
-      client = MySQLPool.pool(connectOptions, poolOptions);
+    PoolOptions poolOptions = new PoolOptions()
+      .setMaxSize(5);
+    client = MySQLPool.pool(vertx, connectOptions, poolOptions);
+    //endregion
 
-    consumer.handler(message->{
-      if (message.body().getString("method").equals("getUser")){
-
-      }
-
-
-
-    });
-    vertx.createHttpServer().requestHandler(request ->{
-      request.response().end("CycloMeter DataBase Verticle");
-    } )
-      .listen(1997,ar->{
-        if(ar.succeeded()){
-          System.out.println("CycloMeter DataBase Verticle running");
+    //region getUser
+    MessageConsumer<JsonObject> consumer = eventBus.consumer("data.base.getUser");
+    JsonObject msg = new JsonObject();
+    consumer.handler(message -> {
+      client.query("SELECT * FROM users WHERE id=" + message.body().getInteger("id")).execute(event -> {
+        if (event.succeeded()) {
+          RowSet<Row> result = event.result();
+          if (result.size() == 0) {
+            msg.put("statusCode", 404);
+          } else {
+            for (Row res : result) {
+              msg.put("statusCode", 200);
+              msg.put("id", res.getInteger(0));
+              msg.put("username", res.getString(1));
+              msg.put("gender", res.getString(2));
+              msg.put("weight", res.getInteger(3));
+              msg.put("age", res.getInteger(4));
+            }
+          }
+        } else {
+          msg.put("statusCode", 400);
         }
-        else {
+        message.reply(msg);
+      });
+    });
+    //endregion
+
+    //region Server
+    vertx.createHttpServer().requestHandler(request -> {
+      request.response().end("CycloMeter DataBase Verticle");
+    })
+      .listen(1997, ar -> {
+        if (ar.succeeded()) {
+          System.out.println("CycloMeter DataBase Verticle running");
+        } else {
           System.out.println("CycloMeter  DataBase Verticle failed");
         }
       });
+    //endregion
   }
-  private JsonObject getUser(int id){
-    client.query("SELECT * FROM user");
-    return new JsonObject();
-  }
-
   @Override
   public void stop() throws Exception {
     super.stop();

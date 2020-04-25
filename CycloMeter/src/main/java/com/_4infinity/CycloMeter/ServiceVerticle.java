@@ -14,15 +14,22 @@ public class ServiceVerticle extends AbstractVerticle {
     Router router = Router.router(vertx);
     EventBus eventBus=vertx.eventBus();
 
-    router.get("/food").handler(req->{
+    router.get("/user/:id").handler(req->{
+      int id=Integer.parseInt(req.request().getParam("id"));
       JsonObject message=new JsonObject();
-      message.put("method","getFood");
-      message.put("data","palacinke");
-      eventBus.request("data.base.mysql",message,response ->{
+      message.put("id",id);
+      if(id<=0)
+        req.fail(404,new Throwable());
+      eventBus.request("data.base.getUser", message, response -> {
         req.response().putHeader("content-type","application/json")
-          .end(response.result().body().toString());
-      } );
+          .setChunked(true)
+          .write(response.result().body().toString()).end();
+      });
     });
+
+    /*router.post("/user").handler(event -> {
+
+    });*/
 
     router.route().handler(request -> {
       request.response().end("CycloMeter Service API");
