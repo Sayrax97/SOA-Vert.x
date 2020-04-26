@@ -8,8 +8,11 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.*;
+import javafx.scene.control.DatePicker;
 
 import javax.swing.*;
+import java.sql.Date;
+import java.time.LocalDate;
 
 public class DataBaseVerticle extends AbstractVerticle {
   private MySQLPool client;
@@ -68,6 +71,7 @@ public class DataBaseVerticle extends AbstractVerticle {
       });
     //endregion
 
+    //region postUser
     MessageConsumer<JsonObject> consumer1=eventBus.consumer("data.base.postUser");
     consumer1.handler(message -> {
       System.out.println("uso sam u handler consmer");
@@ -86,6 +90,34 @@ public class DataBaseVerticle extends AbstractVerticle {
             }
           });
     });
+    //endregion
+
+    //region GetSensor
+    MessageConsumer<JsonObject> consumerGetSensor=eventBus.consumer("data.base.getSensor");
+    consumerGetSensor.handler(message->{
+      int id=message.body().getInteger("id");
+      //get data from database
+      JsonObject sensor=new JsonObject();
+      sensor.put("id",id);
+      sensor.put("total_distance_traveled",24);
+      sensor.put("started_at", "19:55");
+      sensor.put("User_id",1);
+      message.reply(sensor);
+
+    });
+    //endregion
+
+    //region PostSensor
+    MessageConsumer<JsonObject> consumerPostSensor=eventBus.consumer("data.base.postSensor");
+    consumerPostSensor.handler(message->{
+      JsonObject sensor=message.body();
+      //send data to database
+      //if success
+      message.reply("Sensor Added to Database");
+      //else
+    });
+    //endregion
+
   }
   @Override
   public void stop() throws Exception {

@@ -24,8 +24,7 @@ public class ServiceVerticle extends AbstractVerticle {
       if(id<=0)
         req.fail(404,new Throwable());
       eventBus.request("data.base.getUser", message, response -> {
-        req.response().putHeader("content-type","application/json")
-          .setChunked(true)
+        req.response().putHeader("content-type","application/json").setChunked(true)
           .write(response.result().body().toString()).end();
       });
     });
@@ -40,7 +39,6 @@ public class ServiceVerticle extends AbstractVerticle {
       if(!user.getString("gender").contains("M") && !user.getString("gender").contains("F")){
         req.response().setStatusCode(400).end("Gender must be M or F");
       }
-      System.out.println("nesto");
       eventBus.request("data.base.postUser",user,ar->{
         req.response().setChunked(true).write(ar.result().body().toString()).end();
       });
@@ -52,6 +50,37 @@ public class ServiceVerticle extends AbstractVerticle {
     });
     //endregion
 
+    //region GetSensor
+    router.get("/sensor/:id").handler(req->{
+      String paramId=req.request().getParam("id");
+      int id=Integer.parseInt(paramId);
+      JsonObject message= new JsonObject();
+      message.put("id",id);
+      if(id>0)
+        eventBus.request("data.base.getSensor",message,response->{
+          req.response().putHeader("content-type","application/json").setChunked(true).
+            write(response.result().body().toString()).end();
+        });
+      else {
+        req.fail(400,new Throwable());
+      }
+    });
+    //endregion
+
+    //region postSensor
+    router.post("/sensor").handler(req->{
+      JsonObject sensor=req.getBodyAsJson();
+      if(sensor.getFloat("total_distance_traveled")==null || sensor.getString("started_at")==null || sensor.getInteger("User_id")==null )
+        req.fail(400,new Throwable());
+      else {
+        System.out.println("request");
+        eventBus.request("data.base.postSensor", sensor, response -> {
+          System.out.println("response");
+          req.response().setChunked(true).write(response.result().body().toString()).end();
+        });
+      }
+    });
+    //endregion
 
     //region Server
     router.route().handler(request -> {
