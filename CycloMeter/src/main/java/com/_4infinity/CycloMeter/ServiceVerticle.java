@@ -50,6 +50,32 @@ public class ServiceVerticle extends AbstractVerticle {
     });
     //endregion
 
+    //region PostSensorData
+    router.post("/sensor/data").handler(req->{
+      //(speed,incline,terain_type,heart_rate,senzor_id,time_stemp,distance_traveled)
+      JsonObject data=req.getBodyAsJson();
+      if(data.getFloat("speed")==null || data.getBoolean("incline")==null || data.getString("terain_type")==null ||
+         data.getInteger("heart_rate")==null || data.getInteger("senzor_id")==null || data.getInteger("distance_traveled")==null){
+        req.response().setStatusCode(400).end("Some sensor data parameters missing");
+      }
+      else
+      eventBus.request("data.base.postSensorData",data,response->{
+        req.response().end(response.result().body().toString());
+      });
+    });
+    //endregion
+
+    //region GetSensorDataAll
+    router.get("/sensor/data/all/:id").handler(req->{
+      int id=Integer.parseInt(req.request().getParam("id"));
+      JsonObject message=new JsonObject();
+      message.put("id",id);
+      eventBus.request("data.base.GetSensorDataAll",message,response->{
+        req.response().putHeader("content-type","application/json").setChunked(true).write(response.result().body().toString()).end();
+      });
+    });
+    //endregion
+
     //region GetSensor
     router.get("/sensor/:id").handler(req->{
       String paramId=req.request().getParam("id");
