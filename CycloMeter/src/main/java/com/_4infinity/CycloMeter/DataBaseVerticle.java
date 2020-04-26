@@ -13,6 +13,9 @@ import javafx.scene.control.DatePicker;
 import javax.swing.*;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 
 public class DataBaseVerticle extends AbstractVerticle {
   private MySQLPool client;
@@ -33,9 +36,9 @@ public class DataBaseVerticle extends AbstractVerticle {
 
     //region getUser
     MessageConsumer<JsonObject> consumer = eventBus.consumer("data.base.getUser");
-    JsonObject msg = new JsonObject();
     consumer.handler(message -> {
       client.query("SELECT * FROM users WHERE id=" + message.body().getInteger("id")).execute(event -> {
+        JsonObject msg = new JsonObject();
         if (event.succeeded()) {
           RowSet<Row> result = event.result();
           if (result.size() == 0) {
@@ -74,7 +77,6 @@ public class DataBaseVerticle extends AbstractVerticle {
     //region postUser
     MessageConsumer<JsonObject> consumer1=eventBus.consumer("data.base.postUser");
     consumer1.handler(message -> {
-      System.out.println("uso sam u handler consmer");
       client.preparedQuery("INSERT INTO users (username, gender,weight,age) VALUES(?,?,?,?)").
         execute(Tuple.of(message.body().getString("username"),
           (message.body().getString("gender")),
@@ -95,14 +97,31 @@ public class DataBaseVerticle extends AbstractVerticle {
     //region GetSensor
     MessageConsumer<JsonObject> consumerGetSensor=eventBus.consumer("data.base.getSensor");
     consumerGetSensor.handler(message->{
-      int id=message.body().getInteger("id");
-      //get data from database
-      JsonObject sensor=new JsonObject();
-      sensor.put("id",id);
-      sensor.put("total_distance_traveled",24);
-      sensor.put("started_at", "19:55");
-      sensor.put("User_id",1);
-      message.reply(sensor);
+      client.preparedQuery("SELECT * FROM senzor WHERE id=?")
+        .execute(Tuple.of(message.body().getInteger("id")),event -> {
+          JsonObject sensor=new JsonObject();
+          if(event.succeeded()){
+            RowSet<Row> result = event.result();
+            if(result.size()>0){
+              for (Row res:result) {
+                sensor.put("id",res.getInteger(0));
+                sensor.put("total_distance_traveled",res.getDouble(1));
+                LocalDateTime time=res.getLocalDateTime(2);
+                System.out.println(time);
+                sensor.put("started_at", time.toString());
+                sensor.put("User_id",res.getInteger(3));
+              }
+            }
+            else{
+              sensor.put("statusCode", 404);
+            }
+          }
+          else{
+            sensor.put("statusCode", 400);
+          }
+          message.reply(sensor);
+        });
+
 
     });
     //endregion
@@ -110,11 +129,48 @@ public class DataBaseVerticle extends AbstractVerticle {
     //region PostSensor
     MessageConsumer<JsonObject> consumerPostSensor=eventBus.consumer("data.base.postSensor");
     consumerPostSensor.handler(message->{
-      JsonObject sensor=message.body();
-      //send data to database
-      //if success
-      message.reply("Sensor Added to Database");
-      //else
+      //JsonObject sensor=message.body();
+      LocalTime time=LocalTime.now();
+      client.preparedQuery("INSERT INTO senzor (total_distance_traveled,started_at,status_voznje,user_id) VALUES(?,?,?,?)")
+       .execute(Tuple.of(
+         0,
+         time,
+         0,
+         message.body().getInteger("user_id")
+         ),
+         event -> {
+         if(event.succeeded()){
+           client.preparedQuery("SELECT id FROM senzor WHERE user_id=? AND status_voznje=?").execute(
+             Tuple.of(message.body().getInteger("user_id"),0),event1 -> {
+               int id=0;
+               if (event.succeeded()) {
+                 RowSet<Row> result = event1.result();
+                 if (result.size() == 0) {
+                   message.reply("greska u trazenju senzora");
+                 } else {
+                   for (Row res : result) {
+                     id=res.getInteger(0);
+                   }
+                   client.preparedQuery("INSERT INTO senzor_data (speed,incline,terain_type,heart_rate,senzor_id,time_stemp,distance_traveled) VALUES(?,?,?,?,?,?,?)")
+                     .execute(Tuple.of(0,0,"flat",0,id,time,0),event2 -> {
+                       if(!event.succeeded()){
+                         message.reply("neuspesno unet senzor data");
+                       }
+                     });
+                 }
+               }
+               else{
+                 message.reply("greska u queriju");
+               }
+             }
+           );
+           message.reply("Sve je dobro");
+         }
+         else{
+           message.reply("Neuspesno odradjeno");
+           System.out.println(event.cause());
+         }
+       });
     });
     //endregion
 

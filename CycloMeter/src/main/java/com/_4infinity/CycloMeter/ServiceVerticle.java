@@ -70,7 +70,7 @@ public class ServiceVerticle extends AbstractVerticle {
     //region postSensor
     router.post("/sensor").handler(req->{
       JsonObject sensor=req.getBodyAsJson();
-      if(sensor.getFloat("total_distance_traveled")==null || sensor.getString("started_at")==null || sensor.getInteger("User_id")==null )
+      if(sensor.getInteger("user_id")==null )
         req.fail(400,new Throwable());
       else {
         System.out.println("request");
