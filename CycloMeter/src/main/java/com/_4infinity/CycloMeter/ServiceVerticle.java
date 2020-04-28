@@ -30,6 +30,20 @@ public class ServiceVerticle extends AbstractVerticle {
     });
     //endregion
 
+    //region GetUserByUsername
+    router.get("/user/username/:username").handler(req->{
+      String username=req.request().getParam("username");
+      JsonObject message=new JsonObject();
+      message.put("username",username);
+      if(username=="")
+        req.fail(404,new Throwable());
+      eventBus.request("data.base.getUser", message, response -> {
+        req.response().putHeader("content-type","application/json").setChunked(true)
+          .write(response.result().body().toString()).end();
+      });
+    });
+    //endregion
+
     //region PostUser
     router.post("/user").handler(req -> {
       JsonObject user=req.getBodyAsJson();
@@ -54,7 +68,7 @@ public class ServiceVerticle extends AbstractVerticle {
     router.post("/sensor/data").handler(req->{
       //(speed,incline,terain_type,heart_rate,senzor_id,time_stemp,distance_traveled)
       JsonObject data=req.getBodyAsJson();
-      if(data.getFloat("speed")==null || data.getBoolean("incline")==null || data.getString("terain_type")==null ||
+      if(data.getFloat("speed")==null || data.getInteger("incline")==null || data.getString("terain_type")==null ||
          data.getInteger("heart_rate")==null || data.getInteger("senzor_id")==null || data.getInteger("distance_traveled")==null){
         req.response().setStatusCode(400).end("Some sensor data parameters missing");
       }
@@ -104,6 +118,22 @@ public class ServiceVerticle extends AbstractVerticle {
           System.out.println("response");
           req.response().setChunked(true).write(response.result().body().toString()).end();
         });
+      }
+    });
+    //endregion
+
+    //region getMET
+    router.get("/MET/:speed").handler(req->{
+      Double speed=Double.parseDouble( req.request().getParam("speed"));
+      JsonObject message= new JsonObject();
+      message.put("speed",speed);
+      if(speed>=0)
+        eventBus.request("data.base.getMET",message,response->{
+          req.response().putHeader("content-type","application/json").setChunked(true).
+            write(response.result().body().toString()).end();
+        });
+      else {
+        req.fail(400,new Throwable());
       }
     });
     //endregion
