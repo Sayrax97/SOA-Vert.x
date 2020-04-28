@@ -29,7 +29,8 @@ export class RegisterComponent implements OnInit {
   }
   register() {
     this.newUser = this.registerForm.value;
-    // this.vertxService.postUser(this.newUser).subscribe(res=>{
-    // });
+    this.vertxService.postUser(this.newUser).subscribe((res) => {
+      console.log('zahtev poslat');
+    });
   }
 }

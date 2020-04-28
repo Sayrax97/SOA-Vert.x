@@ -234,6 +234,29 @@ public class DataBaseVerticle extends AbstractVerticle {
           data.getInteger("distance_traveled")), result -> {
           if(result.succeeded()){
             message.reply("Sensor Data added to Database");
+            client.preparedQuery("SELECT total_distance_traveled FROM senzor WHERE id=?")
+              .execute(Tuple.of( data.getInteger("senzor_id")),event -> {
+                double totalDistance=0;
+                if(event.succeeded()){
+                  RowSet<Row> res=event.result();
+                  if(res.size()>0){
+                    for (Row r:res) {
+                      totalDistance=r.getDouble(0);
+                    }
+                    totalDistance+=data.getFloat("distance_traveled");
+                    client.preparedQuery("UPDATE senzor SET total_distance_traveled=?")
+                      .execute(Tuple.of(totalDistance),event1 -> {
+                        if(event1.succeeded())
+                          message.reply("Sve je ok");
+                        else{
+                          message.reply("Update ne valja");
+                        }
+                      });
+                  }
+                  message.reply("Nije pronaso ni jedan senzor");
+                }
+                message.reply("Greska u selectu");
+              });
           }
           else {
             message.reply("Error adding sensor data");
@@ -300,6 +323,21 @@ public class DataBaseVerticle extends AbstractVerticle {
      });
     //endregion
 
+    //region putSensor
+    MessageConsumer<JsonObject> consumerPutSenzor=eventBus.consumer("data.base.putSensor");
+    consumerPutSenzor.handler(message-> {
+      client.preparedQuery("UPDATE senzor SET status_voznje=? WHERE id=?")
+        .execute(Tuple.of(message.body().getInteger("status_voznje"),
+          message.body().getInteger("id"))
+          ,event -> {
+            if(event.succeeded())
+              message.reply("Update done");
+            else{
+              message.reply("Greska u update-u");
+            }
+          });
+    });
+    //endregion
 
   }
   @Override

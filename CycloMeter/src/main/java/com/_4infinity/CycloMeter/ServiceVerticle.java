@@ -16,34 +16,6 @@ public class ServiceVerticle extends AbstractVerticle {
     router.route().handler(BodyHandler.create());
     EventBus eventBus=vertx.eventBus();
 
-    //region GetUser
-    router.get("/user/:id").handler(req->{
-      int id=Integer.parseInt(req.request().getParam("id"));
-      JsonObject message=new JsonObject();
-      message.put("id",id);
-      if(id<=0)
-        req.fail(404,new Throwable());
-      eventBus.request("data.base.getUser", message, response -> {
-        req.response().putHeader("content-type","application/json").setChunked(true)
-          .write(response.result().body().toString()).end();
-      });
-    });
-    //endregion
-
-    //region GetUserByUsername
-    router.get("/user/username/:username").handler(req->{
-      String username=req.request().getParam("username");
-      JsonObject message=new JsonObject();
-      message.put("username",username);
-      if(username=="")
-        req.fail(404,new Throwable());
-      eventBus.request("data.base.getUser", message, response -> {
-        req.response().putHeader("content-type","application/json").setChunked(true)
-          .write(response.result().body().toString()).end();
-      });
-    });
-    //endregion
-
     //region PostUser
     router.post("/user").handler(req -> {
       JsonObject user=req.getBodyAsJson();
@@ -54,7 +26,13 @@ public class ServiceVerticle extends AbstractVerticle {
         req.response().setStatusCode(400).end("Gender must be M or F");
       }
       eventBus.request("data.base.postUser",user,ar->{
-        req.response().setChunked(true).write(ar.result().body().toString()).end();
+        req.response()
+          .putHeader("Access-Control-Allow-Origin", "*")
+          .putHeader("Access-Control-Allow-Credentials", "true")
+          .putHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT, OPTIONS, HEAD")
+          .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
+          .setChunked(true).write(ar.result().body().toString())
+          .end();
       });
       //req.response().setChunked(true).write(user.encodePrettily()).end();
     }).failureHandler(failureRoutingContext->{
@@ -63,6 +41,43 @@ public class ServiceVerticle extends AbstractVerticle {
       failureRoutingContext.response().setStatusCode(statusCode).end("Sorry! Not today");
     });
     //endregion
+
+    //region GetUser
+    router.get("/user/:id").handler(req->{
+      int id=Integer.parseInt(req.request().getParam("id"));
+      JsonObject message=new JsonObject();
+      message.put("id",id);
+      if(id<=0) {
+        req.fail(404,new Throwable());
+      }
+      eventBus.request("data.base.getUser", message, response -> {
+        req.response().putHeader("content-type","application/json").putHeader("Access-Control-Allow-Origin", "*")
+          .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+          .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").setChunked(true)
+          .write(response.result().body().toString()).end();
+      });
+    });
+    //endregion
+
+    //region GetUserByUsername
+    router.get("/user/login/:username").handler(req->{
+      String username=req.request().getParam("username");
+      JsonObject message=new JsonObject();
+      message.put("username",username);
+      if(username=="") {
+        req.fail(404,new Throwable());
+      }
+      eventBus.request("data.base.getUser", message, response -> {
+        req.response().putHeader("content-type","application/json")
+          .putHeader("Access-Control-Allow-Origin", "*")
+          .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+          .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
+          .setChunked(true)
+          .write(response.result().body().toString()).end();
+      });
+    });
+    //endregion
+
 
     //region PostSensorData
     router.post("/sensor/data").handler(req->{
@@ -74,7 +89,9 @@ public class ServiceVerticle extends AbstractVerticle {
       }
       else
       eventBus.request("data.base.postSensorData",data,response->{
-        req.response().end(response.result().body().toString());
+        req.response().putHeader("Access-Control-Allow-Origin", "*")
+          .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+          .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").end(response.result().body().toString());
       });
     });
     //endregion
@@ -85,7 +102,9 @@ public class ServiceVerticle extends AbstractVerticle {
       JsonObject message=new JsonObject();
       message.put("id",id);
       eventBus.request("data.base.GetSensorDataAll",message,response->{
-        req.response().putHeader("content-type","application/json").setChunked(true).write(response.result().body().toString()).end();
+        req.response().putHeader("content-type","application/json").putHeader("Access-Control-Allow-Origin", "*")
+          .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+          .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").setChunked(true).write(response.result().body().toString()).end();
       });
     });
     //endregion
@@ -98,7 +117,9 @@ public class ServiceVerticle extends AbstractVerticle {
       message.put("id",id);
       if(id>0)
         eventBus.request("data.base.getSensor",message,response->{
-          req.response().putHeader("content-type","application/json").setChunked(true).
+          req.response().putHeader("content-type","application/json").putHeader("Access-Control-Allow-Origin", "*")
+            .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").setChunked(true).
             write(response.result().body().toString()).end();
         });
       else {
@@ -116,7 +137,9 @@ public class ServiceVerticle extends AbstractVerticle {
         System.out.println("request");
         eventBus.request("data.base.postSensor", sensor, response -> {
           System.out.println("response");
-          req.response().setChunked(true).write(response.result().body().toString()).end();
+          req.response().setChunked(true).write(response.result().body().toString()).putHeader("Access-Control-Allow-Origin", "*")
+            .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").end();
         });
       }
     });
@@ -129,11 +152,30 @@ public class ServiceVerticle extends AbstractVerticle {
       message.put("speed",speed);
       if(speed>=0)
         eventBus.request("data.base.getMET",message,response->{
-          req.response().putHeader("content-type","application/json").setChunked(true).
+          req.response().putHeader("content-type","application/json").putHeader("Access-Control-Allow-Origin", "*")
+            .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").setChunked(true).
             write(response.result().body().toString()).end();
         });
       else {
         req.fail(400,new Throwable());
+      }
+    });
+    //endregion
+
+    //region PutSensor
+    router.put("/sensor").handler(req->{
+      JsonObject sensor=req.getBodyAsJson();
+      if(sensor.getInteger("id")==null )
+        req.fail(400,new Throwable());
+      else {
+        System.out.println("request");
+        eventBus.request("data.base.putSensor", sensor, response -> {
+          System.out.println("response");
+          req.response().setChunked(true).write(response.result().body().toString()).putHeader("Access-Control-Allow-Origin", "*")
+            .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").end();
+        });
       }
     });
     //endregion
@@ -150,6 +192,7 @@ public class ServiceVerticle extends AbstractVerticle {
       }
     });
     //endregion
+
 
   }
 

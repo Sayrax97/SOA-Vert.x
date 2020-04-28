@@ -29,6 +29,6 @@ export class VertxService {
     return this.httpClient.get(this.url + 'sensor/data/all/' + id);
   }
   login(username: string) {
-    return this.httpClient.get(this.url + 'user/login/' + username);
+    return this.httpClient.get<any>(this.url + 'user/login/' + username);
   }
 }
