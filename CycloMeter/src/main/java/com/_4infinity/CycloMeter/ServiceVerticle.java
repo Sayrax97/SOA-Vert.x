@@ -92,10 +92,10 @@ public class ServiceVerticle extends AbstractVerticle {
       String username=req.request().getParam("username");
       JsonObject message=new JsonObject();
       message.put("username",username);
-      if(username=="") {
+      if(username.equals("")) {
         req.fail(400,new Throwable());
       }
-      eventBus.request("data.base.getUser", message, response -> {
+      eventBus.request("data.base.getUserByUsername", message, response -> {
         JsonObject msg=(JsonObject) response.result().body();
         if(msg.getInteger("statusCode")==404)
           req.fail(404);

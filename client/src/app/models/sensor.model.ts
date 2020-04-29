@@ -1,8 +1,7 @@
-import { Time } from '@angular/common';
-
 export class Sensor {
   id: number;
   total_distance: number;
-  started_at: Time;
+  started_at: string;
   User_id: number;
+  status_voznje: boolean;
 }

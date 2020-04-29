@@ -12,6 +12,7 @@ import { Router } from '@angular/router';
 })
 export class LoginComponent implements OnInit {
   username = new FormControl('', Validators.required);
+  errorMessage: string = '';
   user: User = new User();
   constructor(
     private vertxService: VertxService,
@@ -21,10 +22,16 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {}
   login() {
-    this.vertxService.login(this.username.value).subscribe(res => {
-      console.log(res.id);
-      this.auth.login(res.id);
-      this.route.navigateByUrl('/home');
-    });
+    this.vertxService.login(this.username.value).subscribe(
+      res => {
+        console.log(res.id);
+        this.auth.login(res.id);
+        this.route.navigateByUrl('/home');
+      },
+      err => {
+        console.log(err);
+        this.errorMessage = err.error;
+      }
+    );
   }
 }

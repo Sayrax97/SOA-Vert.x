@@ -36,5 +36,12 @@
         Create account
       </button>
     </div>
+    <div
+      *ngIf="errorMessage"
+      class="alert alert-danger text-center offset-3 col-6"
+      role="alert"
+    >
+      {{ errorMessage }}
+    </div>
   </div>
 </div>

@@ -1,3 +1,27 @@
+<div class="row m-4 rounded shadow">
+  <div class="col-2 text-center p-3">
+    <p>Username: {{ user.username }}</p>
+    <p>Age: {{ user.age }}</p>
+    <p>Weight: {{ user.weight }}</p>
+    <p>Gender: {{ user.gender }}</p>
+  </div>
+</div>
 <div class="row m-4">
-  <p>Username</p>
+  <div *ngIf="sensors" class="col-3 rounded shadow">
+    <select [(ngModel)]="selectedSensor" name="sensors" class="form-control">
+      <option value="" disabled>Choose a sensor</option>
+      <option *ngFor="let sensor of sensors" [ngValue]="sensor">
+        Sensor {{ sensor.id }}
+      </option></select
+    >
+    <div *ngIf="selectedSensor">
+      <p *ngIf="selectedSensor.status_voznje">Drive status:Stopped</p>
+      <p *ngIf="!selectedSensor.status_voznje">Drive status:Driving</p>
+      <p>Distance traveled:{{ selectedSensor.total_distance }}</p>
+      <p>Started at:{{ selectedSensor.started_at }}</p>
+      <p>Calories:</p>
+    </div>
+  </div>
+  <div class="col-3 offset-1 rounded shadow"></div>
+  <div class="col-3 offset-1 rounded shadow"></div>
 </div>

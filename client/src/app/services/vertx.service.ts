@@ -11,13 +11,13 @@ export class VertxService {
   constructor(private httpClient: HttpClient) {}
 
   getUser(id: Number) {
-    return this.httpClient.get(this.url + 'user/' + id);
+    return this.httpClient.get<any>(this.url + 'user/' + id);
   }
   postUser(newUser: User) {
     return this.httpClient.post(this.url + 'user/', newUser);
   }
   getSensor(id: Number) {
-    return this.httpClient.get(this.url + 'sensor/' + id);
+    return this.httpClient.get<any>(this.url + 'sensor/' + id);
   }
   postSensor(newSensor: Sensor) {
     return this.httpClient.post(this.url + 'sensor/', newSensor);
@@ -26,9 +26,12 @@ export class VertxService {
     return this.httpClient.post(this.url + 'sensor/data/', newSensorData);
   }
   getAllSensorData(id: Number) {
-    return this.httpClient.get(this.url + 'sensor/data/all/' + id);
+    return this.httpClient.get<any>(this.url + 'sensor/data/all/' + id);
   }
   login(username: string) {
     return this.httpClient.get<any>(this.url + 'user/login/' + username);
+  }
+  getAllSenors(user_id: number) {
+    return this.httpClient.get<any>(this.url + '/sensor/all/' + user_id);
   }
 }

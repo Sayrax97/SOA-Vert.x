@@ -8,7 +8,7 @@ export class AuthService {
   constructor() {}
 
   login(id: number) {
-    this.user_id += id;
+    this.user_id = '' + id;
     this.putInLocalStorage();
   }
   putInLocalStorage() {
@@ -26,5 +26,10 @@ export class AuthService {
       this.user_id = localStorage.getItem('user_id');
     }
     return this.user_id;
+  }
+  isLoggedIn() {
+    if (this.getUserId() != null) {
+      return true;
+    } else return false;
   }
 }
