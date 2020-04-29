@@ -39,12 +39,12 @@ public class DataBaseVerticle extends AbstractVerticle {
     //region getUser
     MessageConsumer<JsonObject> consumer = eventBus.consumer("data.base.getUser");
     consumer.handler(message -> {
-      client.query("SELECT * FROM users WHERE id=" + message.body().getInteger("id")).execute(event -> {
+      client.preparedQuery("SELECT * FROM users WHERE id=?").execute(Tuple.of(message.body().getInteger("id")),event -> {
         JsonObject msg = new JsonObject();
         if (event.succeeded()) {
           RowSet<Row> result = event.result();
           if (result.size() == 0) {
-            msg.put("statusCode", 404);
+            msg.put("blabla", 404);
           } else {
             for (Row res : result) {
               msg.put("statusCode", 200);
@@ -64,8 +64,8 @@ public class DataBaseVerticle extends AbstractVerticle {
     //endregion
 
     //region getUserByUsername
-    MessageConsumer<JsonObject> consumerGetUser = eventBus.consumer("data.base.getUser");
-    consumer.handler(message -> {
+    MessageConsumer<JsonObject> consumerGetUserByUsername = eventBus.consumer("data.base.getUserByUsername");
+    consumerGetUserByUsername.handler(message -> {
       client.preparedQuery("SELECT * FROM users WHERE username=?")
         .execute(Tuple.of(message.body().getString("username")),event -> {
         JsonObject msg = new JsonObject();
@@ -118,21 +118,31 @@ public class DataBaseVerticle extends AbstractVerticle {
                   (message.body().getInteger("weight")),
                   (message.body().getInteger("age"))),event -> {
                   if(event.succeeded()){
-                    message.reply("Uspesno odradjeno");
-                    System.out.println("stiglo u uspesno");
+                    JsonObject msg=new JsonObject();
+                    msg.put("StatusCode",200);
+                    msg.put("message","User Added");
+                    message.reply(msg);
                   }
                   else{
-                    message.reply("Neuspesno odradjeno");
-                    System.out.println("stiglo u neuspesno");
+                    JsonObject msg=new JsonObject();
+                    msg.put("StatusCode",500);
+                    msg.put("message","Error");
+                    message.reply(msg);
                   }
                 });
             }
             else {
-              message.reply("User vec postoji");
+              JsonObject msg=new JsonObject();
+              msg.put("StatusCode",400);
+              msg.put("message","User already exists");
+              message.reply(msg);
             }
           }
           else {
-            message.reply("Greska u queriju");
+            JsonObject msg=new JsonObject();
+            msg.put("StatusCode",500);
+            msg.put("message","Query error");
+            message.reply(msg);
           }
         });
 

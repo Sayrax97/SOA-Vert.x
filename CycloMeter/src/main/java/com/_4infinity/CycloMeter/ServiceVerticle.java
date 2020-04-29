@@ -2,17 +2,29 @@ package com._4infinity.CycloMeter;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.CorsHandler;
 
 public class ServiceVerticle extends AbstractVerticle {
   @Override
   public void start() throws Exception {
     HttpServer server = vertx.createHttpServer();
     Router router = Router.router(vertx);
+    router.route().handler(CorsHandler.create("*")
+      .allowedMethod(HttpMethod.GET)
+      .allowedMethod(HttpMethod.POST)
+      .allowedMethod(HttpMethod.PUT)
+      .allowedMethod(HttpMethod.OPTIONS)
+      .allowedHeader("Access-Control-Request-Method")
+      .allowedHeader("Access-Control-Allow-Credentials")
+      .allowedHeader("Access-Control-Allow-Origin")
+      .allowedHeader("Access-Control-Allow-Headers")
+      .allowedHeader("Content-Type"));
     router.route().handler(BodyHandler.create());
     EventBus eventBus=vertx.eventBus();
 
@@ -26,19 +38,23 @@ public class ServiceVerticle extends AbstractVerticle {
         req.response().setStatusCode(400).end("Gender must be M or F");
       }
       eventBus.request("data.base.postUser",user,ar->{
+        JsonObject message=(JsonObject) ar.result().body();
+        if(message.getInteger("StatusCode")==400)
+          req.fail(400);
+        else if(message.getInteger("StatusCode")==500)
+          req.fail(500);
+        else if(message.getInteger("StatusCode")==200)
         req.response()
-          .putHeader("Access-Control-Allow-Origin", "*")
-          .putHeader("Access-Control-Allow-Credentials", "true")
-          .putHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT, OPTIONS, HEAD")
-          .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
-          .setChunked(true).write(ar.result().body().toString())
+          .setChunked(true).write(message.encodePrettily())
           .end();
       });
       //req.response().setChunked(true).write(user.encodePrettily()).end();
     }).failureHandler(failureRoutingContext->{
       int statusCode = failureRoutingContext.statusCode();
-      // Status code will be 500 for the RuntimeException or 403 for the other failure
-      failureRoutingContext.response().setStatusCode(statusCode).end("Sorry! Not today");
+      if(statusCode==400)
+      failureRoutingContext.response().setStatusCode(statusCode).end("User already exists");
+      else
+        failureRoutingContext.response().setStatusCode(statusCode).end("Creating user failed");
     });
     //endregion
 
@@ -51,9 +67,7 @@ public class ServiceVerticle extends AbstractVerticle {
         req.fail(404,new Throwable());
       }
       eventBus.request("data.base.getUser", message, response -> {
-        req.response().putHeader("content-type","application/json").putHeader("Access-Control-Allow-Origin", "*")
-          .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-          .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").setChunked(true)
+        req.response().putHeader("content-type","application/json").setChunked(true)
           .write(response.result().body().toString()).end();
       });
     });
@@ -67,11 +81,8 @@ public class ServiceVerticle extends AbstractVerticle {
       if(username=="") {
         req.fail(404,new Throwable());
       }
-      eventBus.request("data.base.getUser", message, response -> {
+      eventBus.request("data.base.getUserByUsername", message, response -> {
         req.response().putHeader("content-type","application/json")
-          .putHeader("Access-Control-Allow-Origin", "*")
-          .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-          .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
           .setChunked(true)
           .write(response.result().body().toString()).end();
       });
