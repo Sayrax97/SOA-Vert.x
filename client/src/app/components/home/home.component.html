@@ -17,7 +17,7 @@
     <div *ngIf="selectedSensor">
       <p *ngIf="selectedSensor.status_voznje">Drive status:Stopped</p>
       <p *ngIf="!selectedSensor.status_voznje">Drive status:Driving</p>
-      <p>Distance traveled:{{ selectedSensor.total_distance }}</p>
+      <p>Distance traveled:{{ selectedSensor.total_distance_traveled }}</p>
       <p>Started at:{{ selectedSensor.started_at }}</p>
       <p>Calories:</p>
     </div>

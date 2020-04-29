@@ -9,7 +9,7 @@ import { Sensor } from 'src/app/models/sensor.model';
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
-  styleUrls: ['./home.component.css']
+  styleUrls: ['./home.component.css'],
 })
 export class HomeComponent implements OnInit {
   user: User;
@@ -21,24 +21,9 @@ export class HomeComponent implements OnInit {
   ngOnInit(): void {
     this.sensors = [];
     this.user = new User();
-    let sensor1: Sensor = {
-      id: 1,
-      User_id: 1,
-      started_at: '14:16',
-      total_distance: 22,
-      status_voznje: true
-    };
-    let sensor2: Sensor = {
-      id: 2,
-      User_id: 1,
-      started_at: '22:18',
-      total_distance: 22,
-      status_voznje: false
-    };
-    this.sensors.push(sensor1, sensor2);
     this.sensorSelect = new FormControl('');
     this.vertxService.getUser(parseInt(this.auth.getUserId())).subscribe(
-      res => {
+      (res) => {
         this.user.username = res.username;
         this.user.age = res.age;
         this.user.gender = res.gender;
@@ -46,16 +31,16 @@ export class HomeComponent implements OnInit {
         this.vertxService
           .getAllSenors(parseInt(this.auth.getUserId()))
           .subscribe(
-            res => {
+            (res) => {
               console.log(res);
-              this.sensors = res.data;
+              this.sensors = res.result;
             },
-            err => {
+            (err) => {
               console.log(err);
             }
           );
       },
-      err => {
+      (err) => {
         console.log(err);
       }
     );
