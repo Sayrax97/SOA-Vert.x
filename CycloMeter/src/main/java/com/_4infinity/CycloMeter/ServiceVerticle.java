@@ -39,11 +39,11 @@ public class ServiceVerticle extends AbstractVerticle {
       }
       eventBus.request("data.base.postUser",user,ar->{
         JsonObject message=(JsonObject) ar.result().body();
-        if(message.getInteger("StatusCode")==400)
+        if(message.getInteger("statusCode")==400)
           req.fail(400);
-        else if(message.getInteger("StatusCode")==500)
+        else if(message.getInteger("statusCode")==500)
           req.fail(500);
-        else if(message.getInteger("StatusCode")==200)
+        else if(message.getInteger("statusCode")==200)
         req.response()
           .setChunked(true).write(message.encodePrettily())
           .end();
@@ -52,10 +52,10 @@ public class ServiceVerticle extends AbstractVerticle {
     }).failureHandler(failureRoutingContext->{
       int statusCode = failureRoutingContext.statusCode();
       if(statusCode==400)
-      failureRoutingContext.response().setStatusCode(statusCode).end("User already exists");
+        failureRoutingContext.response().setStatusCode(statusCode).end("User already exists");
       else
         failureRoutingContext.response().setStatusCode(statusCode).end("Creating user failed");
-    });
+    })   ;
     //endregion
 
     //region GetUser
@@ -64,12 +64,26 @@ public class ServiceVerticle extends AbstractVerticle {
       JsonObject message=new JsonObject();
       message.put("id",id);
       if(id<=0) {
-        req.fail(404,new Throwable());
+        req.fail(400,new Throwable());
       }
       eventBus.request("data.base.getUser", message, response -> {
-        req.response().putHeader("content-type","application/json").setChunked(true)
-          .write(response.result().body().toString()).end();
+        JsonObject msg=(JsonObject) response.result().body();
+        if(msg.getInteger("statusCode")==404)
+          req.fail(404);
+        else if(msg.getInteger("statusCode")==400)
+          req.fail(400);
+        else if(msg.getInteger("statusCode")==200)
+          req.response().putHeader("content-type","application/json")
+            .setChunked(true).write(msg.encodePrettily())
+            .end();
       });
+    }).failureHandler(failureRoutingContext -> {
+      int statusCode = failureRoutingContext.statusCode();
+      if(statusCode==400)
+        failureRoutingContext.response().setStatusCode(statusCode).end("Bad Request, invalid id");
+      else if(statusCode==404)
+        failureRoutingContext.response().setStatusCode(statusCode).end("No user with such id found");
+
     });
     //endregion
 
@@ -79,13 +93,26 @@ public class ServiceVerticle extends AbstractVerticle {
       JsonObject message=new JsonObject();
       message.put("username",username);
       if(username=="") {
-        req.fail(404,new Throwable());
+        req.fail(400,new Throwable());
       }
-      eventBus.request("data.base.getUserByUsername", message, response -> {
-        req.response().putHeader("content-type","application/json")
-          .setChunked(true)
-          .write(response.result().body().toString()).end();
+      eventBus.request("data.base.getUser", message, response -> {
+        JsonObject msg=(JsonObject) response.result().body();
+        if(msg.getInteger("statusCode")==404)
+          req.fail(404);
+        else if(msg.getInteger("statusCode")==400)
+          req.fail(400);
+        else if(msg.getInteger("statusCode")==200)
+          req.response().putHeader("content-type","application/json")
+            .setChunked(true).write(msg.encodePrettily())
+            .end();
       });
+    }).failureHandler(failureRoutingContext -> {
+      int statusCode = failureRoutingContext.statusCode();
+      if(statusCode==400)
+        failureRoutingContext.response().setStatusCode(statusCode).end("Bad Request, invalid username");
+      else if(statusCode==404)
+        failureRoutingContext.response().setStatusCode(statusCode).end("No user with such username found");
+
     });
     //endregion
 
@@ -100,10 +127,17 @@ public class ServiceVerticle extends AbstractVerticle {
       }
       else
       eventBus.request("data.base.postSensorData",data,response->{
-        req.response().putHeader("Access-Control-Allow-Origin", "*")
-          .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-          .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").end(response.result().body().toString());
+        JsonObject msg=(JsonObject) response.result().body();
+        if(msg.getInteger("statusCode")==400)
+          req.fail(400);
+        else {
+          req.response().end(response.result().body().toString());
+        }
       });
+    }).failureHandler(failureRoutingContext -> {
+      int statusCode = failureRoutingContext.statusCode();
+      if(statusCode==400)
+        failureRoutingContext.response().setStatusCode(statusCode).end("Bad Request, missing data");
     });
     //endregion
 
@@ -111,12 +145,54 @@ public class ServiceVerticle extends AbstractVerticle {
     router.get("/sensor/data/all/:id").handler(req->{
       int id=Integer.parseInt(req.request().getParam("id"));
       JsonObject message=new JsonObject();
+      if(id<=0){
+        req.fail(400);
+      }
       message.put("id",id);
       eventBus.request("data.base.GetSensorDataAll",message,response->{
-        req.response().putHeader("content-type","application/json").putHeader("Access-Control-Allow-Origin", "*")
-          .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-          .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").setChunked(true).write(response.result().body().toString()).end();
+        JsonObject msg=(JsonObject) response.result().body();
+        if(msg.getInteger("statusCode")==400)
+          req.fail(400);
+        else if(msg.getInteger("statusCode")==404)
+          req.fail(404);
+        else
+        req.response().putHeader("content-type","application/json").
+          setChunked(true).write(response.result().body().toString()).end();
       });
+    }).failureHandler(failureRoutingContext -> {
+      int statusCode=failureRoutingContext.statusCode();
+      if(statusCode==400)
+        failureRoutingContext.response().setStatusCode(statusCode).end("Bad Request, invalid id");
+      else
+        failureRoutingContext.response().setStatusCode(statusCode).end("No senzor data with that id found");
+    });
+    //endregion
+
+    //region GetAllSensor
+    router.get("/sensor/all/:id").handler(req->{
+      int id=Integer.parseInt(req.request().getParam("id"));
+      JsonObject message=new JsonObject();
+      if(id<=0){
+        req.fail(400);
+      }
+      message.put("id",id);
+      eventBus.request("data.base.GetSensorAll",message,response->{
+        JsonObject msg=(JsonObject) response.result().body();
+        System.out.println(msg.encodePrettily());
+        if(msg.getInteger("statusCode")==400)
+          req.fail(400);
+        else if(msg.getInteger("statusCode")==404)
+          req.fail(404);
+        else
+          req.response().putHeader("content-type","application/json").
+            setChunked(true).write(response.result().body().toString()).end();
+      });
+    }).failureHandler(failureRoutingContext -> {
+      int statusCode=failureRoutingContext.statusCode();
+      if(statusCode==400)
+        failureRoutingContext.response().setStatusCode(statusCode).end("Bad Request, invalid id");
+      else
+        failureRoutingContext.response().setStatusCode(statusCode).end("No senzor data with that id found");
     });
     //endregion
 
@@ -128,14 +204,25 @@ public class ServiceVerticle extends AbstractVerticle {
       message.put("id",id);
       if(id>0)
         eventBus.request("data.base.getSensor",message,response->{
-          req.response().putHeader("content-type","application/json").putHeader("Access-Control-Allow-Origin", "*")
-            .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-            .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").setChunked(true).
-            write(response.result().body().toString()).end();
+          JsonObject msg=(JsonObject) response.result().body();
+          if(msg.getInteger("statusCode")==400)
+            req.fail(400);
+          else if(msg.getInteger("statusCode")==404)
+            req.fail(404);
+          else {
+            req.response().putHeader("content-type", "application/json").setChunked(true).
+              write(response.result().body().toString()).end();
+          }
         });
       else {
         req.fail(400,new Throwable());
       }
+    }).failureHandler(failureRoutingContext -> {
+      int statusCode=failureRoutingContext.statusCode();
+      if(statusCode==400)
+        failureRoutingContext.response().setStatusCode(statusCode).end("Bad Request, invalid id");
+      else
+        failureRoutingContext.response().setStatusCode(statusCode).end("No senzor with that id found");
     });
     //endregion
 
@@ -145,14 +232,20 @@ public class ServiceVerticle extends AbstractVerticle {
       if(sensor.getInteger("user_id")==null )
         req.fail(400,new Throwable());
       else {
-        System.out.println("request");
         eventBus.request("data.base.postSensor", sensor, response -> {
-          System.out.println("response");
-          req.response().setChunked(true).write(response.result().body().toString()).putHeader("Access-Control-Allow-Origin", "*")
-            .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-            .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").end();
+          JsonObject msg=(JsonObject) response.result().body();
+          if (msg.getInteger("statusCode") == 400)
+            req.fail(400);
+          else {
+            req.response().putHeader("content-type", "application/json").setChunked(true).
+              write(response.result().body().toString()).end();
+          }
         });
       }
+      }).failureHandler(failureRoutingContext -> {
+      int statusCode=failureRoutingContext.statusCode();
+      if(statusCode==400)
+        failureRoutingContext.response().setStatusCode(statusCode).end("Bad Request, invalid user id");
     });
     //endregion
 
@@ -163,15 +256,26 @@ public class ServiceVerticle extends AbstractVerticle {
       message.put("speed",speed);
       if(speed>=0)
         eventBus.request("data.base.getMET",message,response->{
-          req.response().putHeader("content-type","application/json").putHeader("Access-Control-Allow-Origin", "*")
-            .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-            .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").setChunked(true).
+          JsonObject msg=(JsonObject) response.result().body();
+          if(msg.getInteger("statusCode")==400)
+            req.fail(400);
+          else if(msg.getInteger("statusCode")==404)
+            req.fail(404);
+          else
+          req.response().putHeader("content-type","application/json").setChunked(true).
             write(response.result().body().toString()).end();
         });
       else {
         req.fail(400,new Throwable());
       }
-    });
+    }).failureHandler(failureRoutingContext -> {
+      int statusCode=failureRoutingContext.statusCode();
+      if(statusCode==400)
+        failureRoutingContext.response().setStatusCode(statusCode).end("Bad Request, invalid speed");
+      else{
+        failureRoutingContext.response().setStatusCode(statusCode).end("No such MET found");
+      }
+    });;
     //endregion
 
     //region PutSensor
@@ -180,13 +284,18 @@ public class ServiceVerticle extends AbstractVerticle {
       if(sensor.getInteger("id")==null )
         req.fail(400,new Throwable());
       else {
-        System.out.println("request");
         eventBus.request("data.base.putSensor", sensor, response -> {
-          System.out.println("response");
-          req.response().setChunked(true).write(response.result().body().toString()).putHeader("Access-Control-Allow-Origin", "*")
-            .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-            .putHeader("Access-Control-Allow-Headers", "Content-Type, Authorization").end();
+          JsonObject msg=(JsonObject) response.result().body();
+          if(msg.getInteger("statusCode")==400)
+            req.fail(400);
+          else
+          req.response().setChunked(true).write(response.result().body().toString()).end();
         });
+      }
+    }).failureHandler(failureRoutingContext -> {
+      int statusCode=failureRoutingContext.statusCode();
+      if(statusCode==400){
+        failureRoutingContext.response().setStatusCode(statusCode).end("Bad Request, invalid id");
       }
     });
     //endregion

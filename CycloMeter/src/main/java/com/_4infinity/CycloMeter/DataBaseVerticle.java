@@ -10,6 +10,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.*;
+import io.vertx.sqlclient.impl.RowStreamImpl;
 import javafx.scene.control.DatePicker;
 
 import javax.swing.*;
@@ -44,7 +45,8 @@ public class DataBaseVerticle extends AbstractVerticle {
         if (event.succeeded()) {
           RowSet<Row> result = event.result();
           if (result.size() == 0) {
-            msg.put("blabla", 404);
+            msg.put("statusCode", 404);
+
           } else {
             for (Row res : result) {
               msg.put("statusCode", 200);
@@ -119,13 +121,13 @@ public class DataBaseVerticle extends AbstractVerticle {
                   (message.body().getInteger("age"))),event -> {
                   if(event.succeeded()){
                     JsonObject msg=new JsonObject();
-                    msg.put("StatusCode",200);
+                    msg.put("statusCode",200);
                     msg.put("message","User Added");
                     message.reply(msg);
                   }
                   else{
                     JsonObject msg=new JsonObject();
-                    msg.put("StatusCode",500);
+                    msg.put("statusCode",500);
                     msg.put("message","Error");
                     message.reply(msg);
                   }
@@ -133,14 +135,14 @@ public class DataBaseVerticle extends AbstractVerticle {
             }
             else {
               JsonObject msg=new JsonObject();
-              msg.put("StatusCode",400);
+              msg.put("statusCode",400);
               msg.put("message","User already exists");
               message.reply(msg);
             }
           }
           else {
             JsonObject msg=new JsonObject();
-            msg.put("StatusCode",500);
+            msg.put("statusCode",500);
             msg.put("message","Query error");
             message.reply(msg);
           }
@@ -164,7 +166,8 @@ public class DataBaseVerticle extends AbstractVerticle {
                 LocalDateTime time=res.getLocalDateTime(2);
                 System.out.println(time);
                 sensor.put("started_at", time.toString());
-                sensor.put("User_id",res.getInteger(3));
+                sensor.put("status_voznje",res.getInteger(3));
+                sensor.put("User_id",res.getInteger(4));
               }
             }
             else{
@@ -185,6 +188,7 @@ public class DataBaseVerticle extends AbstractVerticle {
     MessageConsumer<JsonObject> consumerPostSensor=eventBus.consumer("data.base.postSensor");
     consumerPostSensor.handler(message->{
       //JsonObject sensor=message.body();
+      JsonObject msg=new JsonObject();
       LocalTime time=LocalTime.now();
       client.preparedQuery("INSERT INTO senzor (total_distance_traveled,started_at,status_voznje,user_id) VALUES(?,?,?,?)")
        .execute(Tuple.of(
@@ -201,7 +205,7 @@ public class DataBaseVerticle extends AbstractVerticle {
                if (event1.succeeded()) {
                  RowSet<Row> result = event1.result();
                  if (result.size() == 0) {
-                   message.reply("greska u trazenju senzora");
+                   //message.reply("greska u trazenju senzora");
                  } else {
                    for (Row res : result) {
                      id=res.getInteger(0);
@@ -209,23 +213,24 @@ public class DataBaseVerticle extends AbstractVerticle {
                    client.preparedQuery("INSERT INTO senzor_data (speed,incline,terain_type,heart_rate,senzor_id,time_stemp,distance_traveled) VALUES(?,?,?,?,?,?,?)")
                      .execute(Tuple.of(0,0,"flat",0,id,time,0),event2 -> {
                        if(!event2.succeeded()){
-                         message.reply("neuspesno unet senzor data");
+                         //message.reply("neuspesno unet senzor data");
                        }
                      });
                  }
                }
                else{
-                 message.reply("greska u queriju");
+                 //message.reply("greska u queriju");
                }
              }
            );
-           message.reply("Sve je dobro");
+           msg.put("statusCode",200);
          }
          else{
-           message.reply("Neuspesno odradjeno");
-           System.out.println(event.cause());
+           msg.put("statusCode",400);
          }
+           message.reply(msg);
        });
+
     });
     //endregion
 
@@ -234,6 +239,7 @@ public class DataBaseVerticle extends AbstractVerticle {
     consumerPostSensorData.handler(message->{
       LocalTime time=LocalTime.now();
       JsonObject data= message.body();
+      JsonObject msg=new JsonObject();
       client.preparedQuery("INSERT INTO senzor_data (speed,incline,terain_type,heart_rate,senzor_id,time_stemp,distance_traveled) VALUES(?,?,?,?,?,?,?)")
         .execute(Tuple.of(data.getFloat("speed"),
           data.getInteger("incline"),
@@ -243,7 +249,7 @@ public class DataBaseVerticle extends AbstractVerticle {
           time,
           data.getInteger("distance_traveled")), result -> {
           if(result.succeeded()){
-            message.reply("Sensor Data added to Database");
+
             client.preparedQuery("SELECT total_distance_traveled FROM senzor WHERE id=?")
               .execute(Tuple.of( data.getInteger("senzor_id")),event -> {
                 double totalDistance=0;
@@ -257,22 +263,23 @@ public class DataBaseVerticle extends AbstractVerticle {
                     client.preparedQuery("UPDATE senzor SET total_distance_traveled=?")
                       .execute(Tuple.of(totalDistance),event1 -> {
                         if(event1.succeeded())
-                          message.reply("Sve je ok");
+                          msg.put("statusCode",200);
                         else{
-                          message.reply("Update ne valja");
+                          //message.reply("Update ne valja");
                         }
                       });
                   }
-                  message.reply("Nije pronaso ni jedan senzor");
+                  //message.reply("Nije pronaso ni jedan senzor");
                 }
-                message.reply("Greska u selectu");
+                //message.reply("Greska u selectu");
               });
           }
           else {
-            message.reply("Error adding sensor data");
+            msg.put("statusCode",400);
           }
+          message.reply(msg);
         });
-      message.reply("Sensor Data added to Database");
+
     });
 
 
@@ -281,53 +288,100 @@ public class DataBaseVerticle extends AbstractVerticle {
     //region GetAllSensorData
     MessageConsumer<JsonObject> consumerGetSensorDataAll=eventBus.consumer("data.base.GetSensorDataAll");
     consumerGetSensorDataAll.handler(message->{
+      JsonArray data=new JsonArray();
+      JsonObject object=new JsonObject();
       int id=message.body().getInteger("id");
       client.preparedQuery("SELECT * FROM senzor_data WHERE senzor_id=?").execute(Tuple.of(id),result->{
         if(result.succeeded()){
-          JsonArray data=new JsonArray();
-          for (Row res:result.result()) {
-            JsonObject sensorData=new JsonObject();
-            sensorData.put("speed",res.getDouble("speed"));
-            sensorData.put("incline",res.getInteger("incline"));
-            sensorData.put("terain_type",res.getString("terain_type"));
-            sensorData.put("heart_rate",res.getInteger("heart_rate"));
-            sensorData.put("senzor_id",res.getInteger("senzor_id"));
-            LocalTime time=res.getLocalDateTime("time_stemp").toLocalTime();
-            sensorData.put("time_stemp",time.toString());
-            sensorData.put("distance_traveled",res.getDouble("distance_traveled"));
-            data.add(sensorData);
+          RowSet<Row> res=result.result();
+          if(res.size()>0) {
+            for (Row r : res) {
+              JsonObject sensorData = new JsonObject();
+              sensorData.put("speed", r.getDouble("speed"));
+              sensorData.put("incline", r.getInteger("incline"));
+              sensorData.put("terain_type", r.getString("terain_type"));
+              sensorData.put("heart_rate", r.getInteger("heart_rate"));
+              sensorData.put("senzor_id", r.getInteger("senzor_id"));
+              LocalTime time = r.getLocalDateTime("time_stemp").toLocalTime();
+              sensorData.put("time_stemp", time.toString());
+              sensorData.put("distance_traveled", r.getDouble("distance_traveled"));
+              data.add(sensorData);
+            }
+            object.put("statusCode", 200);
           }
-          message.reply(data);
+          else{
+            object.put("statusCode",404);
+          }
         }
         else {
-          message.reply("Error occured while fethcing data");
+          object.put("statusCode",400);
         }
+        object.put("result",data);
+        message.reply(object);
       });
+
+    });
+    //endregion
+
+    //region GetAllSensor
+    MessageConsumer<JsonObject> consumerGetSensorAll=eventBus.consumer("data.base.GetSensorAll");
+    consumerGetSensorAll.handler(message->{
+      JsonArray data=new JsonArray();
+      JsonObject object=new JsonObject();
+      int id=message.body().getInteger("id");
+      client.preparedQuery("SELECT * FROM senzor WHERE user_id=?").execute(Tuple.of(id),result->{
+        if(result.succeeded()){
+          RowSet<Row> res=result.result();
+          if(res.size()>0) {
+            for (Row r : res) {
+              JsonObject sensor = new JsonObject();
+              sensor.put("id",r.getInteger(0));
+              sensor.put("total_distance_traveled",r.getDouble(1));
+              LocalDateTime time=r.getLocalDateTime(2);
+              sensor.put("started_at", time.toString());
+              sensor.put("status_voznje",r.getInteger(3));
+              sensor.put("User_id",r.getInteger(4));
+              data.add(sensor);
+            }
+            object.put("statusCode", 200);
+          }
+          else{
+            object.put("statusCode",404);
+          }
+        }
+        else {
+          object.put("statusCode",400);
+        }
+        object.put("result",data);
+        message.reply(object);
+      });
+
     });
     //endregion
 
     //region getMET
     MessageConsumer<JsonObject> consumerMET=eventBus.consumer("data.base.getMET");
      consumerMET.handler(message -> {
+       JsonObject sensor=new JsonObject();
        double speed=message.body().getDouble("speed");
        client.preparedQuery("SELECT MET FROM activity WHERE speed<? ORDER BY MET DESC LIMIT 1")
          .execute(Tuple.of(speed),event -> {
-           JsonObject sensor=new JsonObject();
            if(event.succeeded()) {
              RowSet<Row> result = event.result();
              if (result.size() != 0){
                for (Row res:result) {
                  sensor.put("MET",res.getDouble("MET"));
                }
-               message.reply(sensor);
+               sensor.put("statusCode",200);
              }
              else{
-               message.reply("Nije pronadjen ni jedan rezultat");
+               sensor.put("statusCode",404);
              }
            }
            else{
-             message.reply("greska u upitu");
+             sensor.put("statusCode",400);
            }
+           message.reply(sensor);
          });
 
      });
@@ -336,16 +390,19 @@ public class DataBaseVerticle extends AbstractVerticle {
     //region putSensor
     MessageConsumer<JsonObject> consumerPutSenzor=eventBus.consumer("data.base.putSensor");
     consumerPutSenzor.handler(message-> {
+      JsonObject msg=new JsonObject();
       client.preparedQuery("UPDATE senzor SET status_voznje=? WHERE id=?")
         .execute(Tuple.of(message.body().getInteger("status_voznje"),
           message.body().getInteger("id"))
           ,event -> {
             if(event.succeeded())
-              message.reply("Update done");
+              msg.put("statusCode",200);
             else{
-              message.reply("Greska u update-u");
+              msg.put("statusCode",400);
             }
+            message.reply(msg);
           });
+
     });
     //endregion
 
