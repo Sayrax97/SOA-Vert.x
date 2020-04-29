@@ -1,32 +1,30 @@
 import { User } from './../../models/user.model';
 import { Component, OnInit } from '@angular/core';
-import { VertxService } from 'src/app/vertx.service';
+import { VertxService } from 'src/app/services/vertx.service';
 import { FormControl, Validators } from '@angular/forms';
+import { AuthService } from 'src/app/services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css'],
+  styleUrls: ['./login.component.css']
 })
 export class LoginComponent implements OnInit {
   username = new FormControl('', Validators.required);
   user: User = new User();
-  constructor(private vertxService: VertxService) {}
+  constructor(
+    private vertxService: VertxService,
+    private auth: AuthService,
+    private route: Router
+  ) {}
 
   ngOnInit(): void {}
   login() {
-    console.log(this.username.value);
-
-    this.vertxService.login(this.username.value).subscribe((res) => {
-      if (res.statusCode == 200) {
-        this.user.age = res.age;
-        this.user.gender = res.gender;
-        this.user.username = res.username;
-        this.user.weight = res.weight;
-        console.log(this.user.age);
-      } else {
-        console.log(res.statusCode);
-      }
+    this.vertxService.login(this.username.value).subscribe(res => {
+      console.log(res.id);
+      this.auth.login(res.id);
+      this.route.navigateByUrl('/home');
     });
   }
 }

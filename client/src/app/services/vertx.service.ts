@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { User } from './models/user.model';
-import { Sensor } from './models/sensor.model';
-import { SensorData } from './models/sensor.data.model';
+import { User } from '../models/user.model';
+import { Sensor } from '../models/sensor.model';
+import { SensorData } from '../models/sensor.data.model';
 
 @Injectable({ providedIn: 'root' })
 export class VertxService {
