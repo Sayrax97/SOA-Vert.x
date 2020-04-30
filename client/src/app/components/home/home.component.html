@@ -8,7 +8,12 @@
 </div>
 <div class="row m-4">
   <div *ngIf="sensors" class="col-3 rounded shadow">
-    <select [(ngModel)]="selectedSensor" name="sensors" class="form-control">
+    <select
+      [(ngModel)]="selectedSensor"
+      name="sensors"
+      class="form-control"
+      (change)="getSelectedSensorData()"
+    >
       <option value="" disabled>Choose a sensor</option>
       <option *ngFor="let sensor of sensors" [ngValue]="sensor">
         Sensor {{ sensor.id }}
@@ -20,8 +25,85 @@
       <p>Distance traveled:{{ selectedSensor.total_distance_traveled }}</p>
       <p>Started at:{{ selectedSensor.started_at }}</p>
       <p>Calories:</p>
+      <ul class="list-group" *ngIf="selectedSensor.data">
+        <li class="list-group-item active">Sensor data list</li>
+        <li
+          class="list-group-item"
+          *ngFor="let item of selectedSensor.data; let i = index"
+        >
+          Sesnor data {{ i }}
+        </li>
+      </ul>
     </div>
   </div>
-  <div class="col-3 offset-1 rounded shadow"></div>
-  <div class="col-3 offset-1 rounded shadow"></div>
+  <div class="col-3 offset-1 rounded shadow">
+    <div *ngIf="selectedData" class="text-center">
+      <h2>Sesnor data</h2>
+      <p>Speed:{{ selectedData.speed }}</p>
+      <p>incline:{{ selectedData.incline }}</p>
+      <p>Terain type:{{ selectedData.terain_type }}</p>
+      <p>Heart rate:{{ selectedData.heart_rate }}</p>
+      <p>Time:{{ selectedData.time_stemp }}</p>
+      <p>Distance traveled:{{ selectedData.distance_traveled }}</p>
+    </div>
+  </div>
+  <div class="col-3 offset-1 rounded shadow">
+    <form [formGroup]="newSensorDataForm">
+      <h2 class="text-center">Add new sensor data</h2>
+      <label for="speed">
+        Speed
+      </label>
+      <div>
+        <input
+          type="number"
+          name="speed"
+          class="form-control mb-3"
+          formControlName="speed"
+        />
+        <input type="checkbox" name="incline" formControlName="incline" />
+        <label for="incline" class="ml-3">
+          Incline
+        </label>
+      </div>
+
+      <div for="terrain_type">
+        Terrain Type
+      </div>
+      <select
+        type="text"
+        name="terrain_type"
+        class="form-control"
+        formControlName="terrain_type"
+      >
+        <option value="Flat">Flat</option>
+        <option value="Dirt">Dirt</option>
+        <option value="Mountain">Mountain</option>
+      </select>
+      <label for="hearth_rate">
+        Hearth rate
+      </label>
+      <input
+        type="number"
+        name="hearth_rate"
+        class="form-control"
+        formControlName="hearth_rate"
+      />
+      <label for="distance">
+        Distance
+      </label>
+      <input
+        type="number"
+        name="distance"
+        class="form-control"
+        formControlName="distance"
+      />
+    </form>
+    <button
+      [disabled]="!newSensorDataForm.valid"
+      class="btn btn-primary"
+      (click)="sendNewData()"
+    >
+      Add new data
+    </button>
+  </div>
 </div>

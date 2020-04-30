@@ -1,5 +1,3 @@
-import { Time } from '@angular/common';
-
 export class SensorData {
   id: number;
   speed: number;
@@ -7,6 +5,6 @@ export class SensorData {
   terain_type: string;
   heart_rate: number;
   senzor_id: number;
-  time_stemp: Time;
+  time_stemp: string;
   distance_traveled: number;
 }
