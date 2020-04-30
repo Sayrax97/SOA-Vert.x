@@ -27,7 +27,7 @@
       <p *ngIf="!selectedSensor.status_voznje">Drive status:Driving</p>
       <p>Distance traveled:{{ selectedSensor.total_distance_traveled }}</p>
       <p>Started at:{{ selectedSensor.started_at }}</p>
-      <p>Calories:</p>
+      <p *ngIf="calories">Calories: {{ calories }}</p>
       <ul class="list-group" *ngIf="selectedSensor.data">
         <li class="list-group-item active">Sensor data list</li>
         <li

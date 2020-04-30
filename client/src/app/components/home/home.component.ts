@@ -13,6 +13,7 @@ import { Sensor } from 'src/app/models/sensor.model';
   styleUrls: ['./home.component.css'],
 })
 export class HomeComponent implements OnInit {
+  calories: number;
   user: User;
   sensors: Sensor[];
   sensorSelect: FormControl;
@@ -59,11 +60,27 @@ export class HomeComponent implements OnInit {
     );
   }
 
+  resetSensor() {
+    this.selectedSensor = null;
+    this.selectedData = null;
+    this.sensors = [];
+    this.vertxService.getAllSenors(parseInt(this.auth.getUserId())).subscribe(
+      (res) => {
+        console.log(res);
+        this.sensors = res.result;
+      },
+      (err) => {
+        console.log(err);
+      }
+    );
+  }
+
   getSelectedSensorData() {
     this.vertxService.getAllSensorData(this.selectedSensor.id).subscribe(
       (res) => {
         console.log(res);
         this.selectedSensor.data = res.result;
+        this.caloriesCalculator();
       },
       (err) => {
         console.log(err);
@@ -95,7 +112,7 @@ export class HomeComponent implements OnInit {
     this.vertxService.postSensor(parseInt(this.auth.getUserId())).subscribe(
       (res) => {
         console.log(res);
-        this.ngOnInit();
+        this.resetSensor();
       },
       (err) => {
         console.log(err);
@@ -107,11 +124,21 @@ export class HomeComponent implements OnInit {
     this.vertxService.putSensor(this.selectedSensor.id).subscribe(
       (res) => {
         console.log(res);
-        this.init();
+        this.resetSensor();
       },
       (err) => {
         console.log(err);
       }
     );
+  }
+
+  caloriesCalculator() {
+    this.calories = 0;
+    this.selectedSensor.data.forEach((e) => {
+      if (e.speed != 0)
+        this.vertxService.getMET(e.speed).subscribe((res) => {
+          this.calories += (res.MET * this.user.weight * 3.5) / 200;
+        });
+    });
   }
 }

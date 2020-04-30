@@ -37,4 +37,8 @@ export class VertxService {
   putSensor(senzor_id: number) {
     return this.httpClient.put<any>(this.url + '/sensor', { senzor_id });
   }
+
+  getMET(speed: number) {
+    return this.httpClient.get<any>(this.url + 'MET/' + speed);
+  }
 }
