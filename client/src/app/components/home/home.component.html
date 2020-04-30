@@ -48,7 +48,10 @@
     </div>
   </div>
   <div class="col-3 offset-1 rounded shadow">
-    <form [formGroup]="newSensorDataForm">
+    <form
+      *ngIf="selectedSensor && !selectedSensor.status_voznje"
+      [formGroup]="newSensorDataForm"
+    >
       <h2 class="text-center">Add new sensor data</h2>
       <label for="speed">
         Speed
@@ -79,26 +82,27 @@
         <option value="Dirt">Dirt</option>
         <option value="Mountain">Mountain</option>
       </select>
-      <label for="hearth_rate">
-        Hearth rate
+      <label for="heart_rate">
+        Heart rate
       </label>
       <input
         type="number"
-        name="hearth_rate"
+        name="heart_rate"
         class="form-control"
-        formControlName="hearth_rate"
+        formControlName="heart_rate"
       />
-      <label for="distance">
+      <label for="distance_traveled">
         Distance
       </label>
       <input
         type="number"
-        name="distance"
+        name="distance_traveled"
         class="form-control"
-        formControlName="distance"
+        formControlName="distance_traveled"
       />
     </form>
     <button
+      *ngIf="selectedSensor && !selectedSensor.status_voznje"
       [disabled]="!newSensorDataForm.valid"
       class="btn btn-primary"
       (click)="sendNewData()"
