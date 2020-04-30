@@ -19,8 +19,8 @@ export class VertxService {
   getSensor(id: Number) {
     return this.httpClient.get<any>(this.url + 'sensor/' + id);
   }
-  postSensor(newSensor: Sensor) {
-    return this.httpClient.post(this.url + 'sensor/', newSensor);
+  postSensor(user_id: number) {
+    return this.httpClient.post(this.url + 'sensor', { user_id });
   }
   postSensorData(newSensorData: SensorData) {
     return this.httpClient.post(this.url + 'sensor/data/', newSensorData);
@@ -33,5 +33,8 @@ export class VertxService {
   }
   getAllSenors(user_id: number) {
     return this.httpClient.get<any>(this.url + '/sensor/all/' + user_id);
+  }
+  putSensor(senzor_id: number) {
+    return this.httpClient.put<any>(this.url + '/sensor', { senzor_id });
   }
 }

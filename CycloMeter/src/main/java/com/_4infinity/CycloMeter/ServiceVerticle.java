@@ -231,6 +231,7 @@ public class ServiceVerticle extends AbstractVerticle {
     //region postSensor
     router.post("/sensor").handler(req->{
       JsonObject sensor=req.getBodyAsJson();
+      System.out.println(sensor.encodePrettily());
       if(sensor.getInteger("user_id")==null )
         req.fail(400,new Throwable());
       else {
@@ -283,7 +284,7 @@ public class ServiceVerticle extends AbstractVerticle {
     //region PutSensor
     router.put("/sensor").handler(req->{
       JsonObject sensor=req.getBodyAsJson();
-      if(sensor.getInteger("id")==null )
+      if(sensor.getInteger("senzor_id")==null )
         req.fail(400,new Throwable());
       else {
         eventBus.request("data.base.putSensor", sensor, response -> {

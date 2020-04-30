@@ -32,6 +32,9 @@ export class HomeComponent implements OnInit {
     this.sensors = [];
     this.user = new User();
     this.sensorSelect = new FormControl('');
+    this.init();
+  }
+  init() {
     this.vertxService.getUser(parseInt(this.auth.getUserId())).subscribe(
       (res) => {
         this.user.username = res.username;
@@ -55,6 +58,7 @@ export class HomeComponent implements OnInit {
       }
     );
   }
+
   getSelectedSensorData() {
     this.vertxService.getAllSensorData(this.selectedSensor.id).subscribe(
       (res) => {
@@ -66,6 +70,11 @@ export class HomeComponent implements OnInit {
       }
     );
   }
+
+  viewSenzorData(index: number) {
+    this.selectedData = this.selectedSensor.data[index];
+    console.log(this.selectedData);
+  }
   sendNewData() {
     let sensorData: SensorData = new SensorData();
     sensorData = this.newSensorDataForm.value;
@@ -74,6 +83,31 @@ export class HomeComponent implements OnInit {
     this.vertxService.postSensorData(sensorData).subscribe(
       (res) => {
         console.log(res);
+        this.getSelectedSensorData();
+      },
+      (err) => {
+        console.log(err);
+      }
+    );
+  }
+
+  startNewSensor() {
+    this.vertxService.postSensor(parseInt(this.auth.getUserId())).subscribe(
+      (res) => {
+        console.log(res);
+        this.ngOnInit();
+      },
+      (err) => {
+        console.log(err);
+      }
+    );
+  }
+
+  stopSensor() {
+    this.vertxService.putSensor(this.selectedSensor.id).subscribe(
+      (res) => {
+        console.log(res);
+        this.init();
       },
       (err) => {
         console.log(err);

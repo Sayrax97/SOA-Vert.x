@@ -216,6 +216,7 @@ public class DataBaseVerticle extends AbstractVerticle {
                          //message.reply("neuspesno unet senzor data");
                        }
                        msg.put("statusCode",200);
+                       message.reply(msg);
                      });
                  }
                }
@@ -296,7 +297,7 @@ public class DataBaseVerticle extends AbstractVerticle {
       JsonArray data=new JsonArray();
       JsonObject object=new JsonObject();
       int id=message.body().getInteger("id");
-      client.preparedQuery("SELECT * FROM senzor_data WHERE senzor_id=?").execute(Tuple.of(id),result->{
+      client.preparedQuery("SELECT * FROM senzor_data WHERE senzor_id=? ORDER BY id ASC").execute(Tuple.of(id),result->{
         if(result.succeeded()){
           RowSet<Row> res=result.result();
           if(res.size()>0) {
@@ -396,9 +397,8 @@ public class DataBaseVerticle extends AbstractVerticle {
     MessageConsumer<JsonObject> consumerPutSenzor=eventBus.consumer("data.base.putSensor");
     consumerPutSenzor.handler(message-> {
       JsonObject msg=new JsonObject();
-      client.preparedQuery("UPDATE senzor SET status_voznje=? WHERE id=?")
-        .execute(Tuple.of(message.body().getInteger("status_voznje"),
-          message.body().getInteger("id"))
+      client.preparedQuery("UPDATE senzor SET status_voznje=1 WHERE id=?")
+        .execute(Tuple.of(message.body().getInteger("senzor_id"))
           ,event -> {
             if(event.succeeded())
               msg.put("statusCode",200);

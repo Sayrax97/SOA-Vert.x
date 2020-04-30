@@ -5,6 +5,9 @@
     <p>Weight: {{ user.weight }}</p>
     <p>Gender: {{ user.gender }}</p>
   </div>
+  <button (click)="startNewSensor()">
+    Start new sensor
+  </button>
 </div>
 <div class="row m-4">
   <div *ngIf="sensors" class="col-3 rounded shadow">
@@ -30,10 +33,14 @@
         <li
           class="list-group-item"
           *ngFor="let item of selectedSensor.data; let i = index"
+          (click)="viewSenzorData(i)"
         >
           Sesnor data {{ i }}
         </li>
       </ul>
+      <button (click)="stopSensor()">
+        Stop sensor
+      </button>
     </div>
   </div>
   <div class="col-3 offset-1 rounded shadow">
@@ -41,7 +48,7 @@
       <h2>Sesnor data</h2>
       <p>Speed:{{ selectedData.speed }}</p>
       <p>incline:{{ selectedData.incline }}</p>
-      <p>Terain type:{{ selectedData.terain_type }}</p>
+      <p>Terrain type:{{ selectedData.terrain_type }}</p>
       <p>Heart rate:{{ selectedData.heart_rate }}</p>
       <p>Time:{{ selectedData.time_stemp }}</p>
       <p>Distance traveled:{{ selectedData.distance_traveled }}</p>
