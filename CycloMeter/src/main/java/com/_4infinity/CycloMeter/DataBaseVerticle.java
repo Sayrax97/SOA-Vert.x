@@ -210,11 +210,12 @@ public class DataBaseVerticle extends AbstractVerticle {
                    for (Row res : result) {
                      id=res.getInteger(0);
                    }
-                   client.preparedQuery("INSERT INTO senzor_data (speed,incline,terain_type,heart_rate,senzor_id,time_stemp,distance_traveled) VALUES(?,?,?,?,?,?,?)")
+                   client.preparedQuery("INSERT INTO senzor_data (speed,incline,terrain_type,heart_rate,senzor_id,time_stemp,distance_traveled) VALUES(?,?,?,?,?,?,?)")
                      .execute(Tuple.of(0,0,"flat",0,id,time,0),event2 -> {
                        if(!event2.succeeded()){
                          //message.reply("neuspesno unet senzor data");
                        }
+                       msg.put("statusCode",200);
                      });
                  }
                }
@@ -223,12 +224,13 @@ public class DataBaseVerticle extends AbstractVerticle {
                }
              }
            );
-           msg.put("statusCode",200);
+
          }
          else{
            msg.put("statusCode",400);
-         }
            message.reply(msg);
+         }
+
        });
 
     });
@@ -240,17 +242,18 @@ public class DataBaseVerticle extends AbstractVerticle {
       LocalTime time=LocalTime.now();
       JsonObject data= message.body();
       JsonObject msg=new JsonObject();
-      client.preparedQuery("INSERT INTO senzor_data (speed,incline,terain_type,heart_rate,senzor_id,time_stemp,distance_traveled) VALUES(?,?,?,?,?,?,?)")
+      int i=data.getBoolean("incline")?1:0;
+      System.out.println(data.encodePrettily());
+      client.preparedQuery("INSERT INTO senzor_data (speed,incline,terrain_type,heart_rate,senzor_id,time_stemp,distance_traveled) VALUES(?,?,?,?,?,?,?)")
         .execute(Tuple.of(data.getFloat("speed"),
-          data.getInteger("incline"),
-          data.getString("terain_type"),
+          i,
+          data.getString("terrain_type"),
           data.getInteger("heart_rate"),
           data.getInteger("senzor_id"),
           time,
           data.getInteger("distance_traveled")), result -> {
           if(result.succeeded()){
-
-            client.preparedQuery("SELECT total_distance_traveled FROM senzor WHERE id=?")
+               client.preparedQuery("SELECT total_distance_traveled FROM senzor WHERE id=?")
               .execute(Tuple.of( data.getInteger("senzor_id")),event -> {
                 double totalDistance=0;
                 if(event.succeeded()){
@@ -265,22 +268,24 @@ public class DataBaseVerticle extends AbstractVerticle {
                         if(event1.succeeded())
                           msg.put("statusCode",200);
                         else{
-                          //message.reply("Update ne valja");
+                          msg.put("statusCode",400);
                         }
+                        message.reply(msg);
                       });
                   }
                   //message.reply("Nije pronaso ni jedan senzor");
                 }
                 //message.reply("Greska u selectu");
+
               });
           }
           else {
             msg.put("statusCode",400);
+            message.reply(msg);
           }
-          message.reply(msg);
-        });
 
-    });
+        });
+      });
 
 
     //endregion
@@ -299,7 +304,7 @@ public class DataBaseVerticle extends AbstractVerticle {
               JsonObject sensorData = new JsonObject();
               sensorData.put("speed", r.getDouble("speed"));
               sensorData.put("incline", r.getInteger("incline"));
-              sensorData.put("terain_type", r.getString("terain_type"));
+              sensorData.put("terrain_type", r.getString("terrain_type"));
               sensorData.put("heart_rate", r.getInteger("heart_rate"));
               sensorData.put("senzor_id", r.getInteger("senzor_id"));
               LocalTime time = r.getLocalDateTime("time_stemp").toLocalTime();

@@ -121,19 +121,21 @@ public class ServiceVerticle extends AbstractVerticle {
     router.post("/sensor/data").handler(req->{
       //(speed,incline,terain_type,heart_rate,senzor_id,time_stemp,distance_traveled)
       JsonObject data=req.getBodyAsJson();
-      if(data.getFloat("speed")==null || data.getInteger("incline")==null || data.getString("terain_type")==null ||
+      if(data.getFloat("speed")==null || data.getBoolean("incline")==null || data.getString("terrain_type")==null ||
          data.getInteger("heart_rate")==null || data.getInteger("senzor_id")==null || data.getInteger("distance_traveled")==null){
         req.response().setStatusCode(400).end("Some sensor data parameters missing");
       }
-      else
+      else{
       eventBus.request("data.base.postSensorData",data,response->{
         JsonObject msg=(JsonObject) response.result().body();
+        System.out.println(msg.encodePrettily());
         if(msg.getInteger("statusCode")==400)
           req.fail(400);
         else {
-          req.response().end(response.result().body().toString());
+          req.response().setChunked(true).write(msg.encodePrettily()).end();
         }
       });
+      }
     }).failureHandler(failureRoutingContext -> {
       int statusCode = failureRoutingContext.statusCode();
       if(statusCode==400)
@@ -178,7 +180,7 @@ public class ServiceVerticle extends AbstractVerticle {
       message.put("id",id);
       eventBus.request("data.base.GetSensorAll",message,response->{
         JsonObject msg=(JsonObject) response.result().body();
-        System.out.println(msg.encodePrettily());
+        System.out.println("+");
         if(msg.getInteger("statusCode")==400)
           req.fail(400);
         else if(msg.getInteger("statusCode")==404)
