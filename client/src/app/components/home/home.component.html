@@ -4,10 +4,10 @@
     <p>Age: {{ user.age }}</p>
     <p>Weight: {{ user.weight }}</p>
     <p>Gender: {{ user.gender }}</p>
+    <button class="btn btn-primary" (click)="startNewSensor()">
+      Start new sensor
+    </button>
   </div>
-  <button (click)="startNewSensor()">
-    Start new sensor
-  </button>
 </div>
 <div class="row m-4">
   <div *ngIf="sensors" class="col-3 rounded shadow">
@@ -38,7 +38,7 @@
           Sesnor data {{ i }}
         </li>
       </ul>
-      <button (click)="stopSensor()">
+      <button class="btn btn-primary" (click)="stopSensor()">
         Stop sensor
       </button>
     </div>
